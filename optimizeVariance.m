@@ -11,12 +11,13 @@
 function [z, var]=optimizeVariance(X,ind)
     tol = 1E-8;
 
-    if (sum(ind)==1)
+    num_comp=sum(ind);
+    if (num_comp==1)
         z=double(ind);
         var = (norm(X(:,ind)))^2;
     else
         X2=X(:,ind);
-        z_temp = randn(sum(ind),1);
+        z_temp = randn(num_comp,1);
         
         diff = inf;
         while diff > tol

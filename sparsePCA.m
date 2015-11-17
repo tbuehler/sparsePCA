@@ -57,35 +57,35 @@ function [cards, vars, Z]= sparsePCA(X, card_min, card_max, num_runs, verbosity)
     start1(i_max)=1;
 
     % output
-    cards=zeros(card_max-card_min+1,1);
-    gammas=zeros(card_max-card_min+1,1);
-    vars=zeros(card_max-card_min+1,1);
-    Z=zeros(dim,card_max-card_min+1);
-    lambdas=zeros(card_max-card_min+1,1);
-    found_cards=zeros(card_max-card_min+1,1);
+    results.cards=zeros(card_max-card_min+1,1);
+    results.gammas=zeros(card_max-card_min+1,1);
+    results.vars=zeros(card_max-card_min+1,1);
+    results.Z=zeros(dim,card_max-card_min+1);
+    results.lambdas=zeros(card_max-card_min+1,1);
+    results.found_cards=zeros(card_max-card_min+1,1);
     
     card0=round((card_max+card_min)/2);
 
     % searches for a vector with cardinality card0 via binary search (and
     % stores the solutions for other cardinalities it finds along the way)
-    [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, gam_left, gam_right, ... 
-        num_runs, start1, cards, vars, Z, gammas, lambdas, found_cards, card_min, card_max, verbosity);
-
+    results = binSearch(results, X, card0, gam_left, gam_right, ... 
+        num_runs, start1, card_min, card_max, verbosity);
+   
     % repeat this until all gaps are filled
-    ix1=find(found_cards==0,1);
+    ix1=find(results.found_cards==0,1);
     while(~isempty(ix1))
         card_min_temp=card_min-1+ix1;
         if(card_min_temp>card_min)
-            gam_right=gammas(card_min_temp-card_min);
+            gam_right=results.gammas(card_min_temp-card_min);
         else 
             gam_right= 1;
         end
 
-        ix2=find(found_cards(ix1:end)>0,1);
+        ix2=find(results.found_cards(ix1:end)>0,1);
         if(~isempty(ix2))
-            if found_cards(ix2)<inf
+            if results.found_cards(ix2)<inf
                 card_max_temp=card_min-1+ix1-1+ix2-1;
-                gam_left=gammas(card_max_temp-card_min+2);
+                gam_left=results.gammas(card_max_temp-card_min+2);
             else
                 card_max_temp=card_min-1+ix1-1+ix2-1;
                 gam_left=0;
@@ -101,71 +101,18 @@ function [cards, vars, Z]= sparsePCA(X, card_min, card_max, num_runs, verbosity)
             fprintf('card_min_temp= %d card_max_temp= %d gam_left=%.5g gam_right=%.5g\n',card_min_temp,card_max_temp,gam_left,gam_right);
         end
 
-        [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, ... 
-            gam_left, gam_right, num_runs, start1, cards, vars, Z, gammas, ... 
-            lambdas, found_cards, card_min, card_max, verbosity);
-
-        ix1=find(found_cards==0,1);
+        results = binSearch(results, X, card0, gam_left, gam_right, num_runs, ... 
+            start1, card_min, card_max, verbosity);
+     
+        ix1=find(results.found_cards==0,1);
     end
 
-    isChanging=true;
-    vars_old=vars;
-    while(isChanging)
-        % check if variance is monotonically increasing
-        cur_var=vars(1);
-        curz=Z(:,1);
-        for k=2:length(vars)
-            new_var=vars(k);
-            if(new_var<cur_var || cards(k)==inf)
-                % take sparsity pattern from previous one + add one nonzero
-                % component -> increasse in variance guaranteed
-                norm_a_i=zeros(dim,1);
-                pattern =  abs(curz)>0;
-                ind=find(pattern==0);
-                temp=X*curz;temp=temp/norm(temp);
-                for i=1:length(ind),
-                    norm_a_i(ind(i))=(X(:,ind(i))'*temp)^2;
-                end
-                [rho_max,i_max]=max(norm_a_i);
-                pattern(i_max)=1;
-                [z, new_var2]=optimizeVariance(X,pattern);
-
-                vars(k)=new_var2;
-                Z(:,k)=z;
-                cards(k)=sum(pattern);
-
-                % check if we find something better via invpow
-                card0=card_min-1+k;
-                gam_left=0;
-                gam_right=1;
-                [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, gam_left, gam_right, ... 
-                    num_runs, start1, cards, vars, Z, gammas, lambdas, found_cards, card_min, card_max, verbosity);
-            end
-            cur_var=vars(k);
-            curz=Z(:,k);
-        end
-
-        if  norm(vars-vars_old,inf)/norm(vars(vars<inf),inf)< 1E-15
-            isChanging=false;
-        end
-        vars_old=vars;
-        if verbosity>1
-            fprintf('isChanging=%d  normdiff=%.15g\n',isChanging,norm(vars-vars_old,inf));
-        end
-    end
-
-    if verbosity>1
-        isDecreasing=false;
-        cur_var=vars(1);
-        for k=2:length(vars)
-            new_var=vars(k);
-            if new_var< cur_var 
-                isDecreasing=true;
-            end
-            cur_var=new_var;
-        end
-        fprintf('isChanging=%d isDecreasing=%d \n',isChanging,isDecreasing);
-    end	
+    results = postProcess(results,X,card_min,card_max,num_runs,verbosity);
+    
+    cards=results.cards;
+    vars=results.vars;
+    Z=results.Z;
+    
 end
 
 
@@ -224,8 +171,8 @@ end
 
 % searches for a vector with cardinality card0 via binary search (and
 % stores the solutions for other cardinalities it finds along the way)
-function [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, gam_left, gam_right, num_runs, ... 
-    start1, cards, vars, Z, gammas, lambdas, found_cards, card_min_global, card_max_global, verbosity)
+function results = binSearch(results, X, card0, gam_left, gam_right, num_runs, ... 
+    start1, card_min_global, card_max_global, verbosity)
 
     maxit=100;
     epsilon=1E-6;
@@ -271,23 +218,23 @@ function [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, ga
             cur_var = vars_tmp(l);
 
             if cur_card == best_card
-                found_cards(best_card-card_min_global+1) = best_card;
+                results.found_cards(best_card-card_min_global+1) = best_card;
             end
 
-            if vars(cur_card-card_min_global+1) < cur_var
+            if results.vars(cur_card-card_min_global+1) < cur_var
 
                 if verbosity>1
-                    if (cards(cur_card-card_min_global+1)==0)
+                    if (results.cards(cur_card-card_min_global+1)==0)
                         fprintf('Found solution with cardinality %d\n',cur_card);
                     else
                         fprintf('Improved solution with cardinality %d\n',cur_card);
                     end
                 end
-                cards(cur_card-card_min_global+1) = cur_card;
-                vars(cur_card-card_min_global+1) = cur_var;
-                Z(:,cur_card-card_min_global+1) = Z_tmp(:,l);
-                gammas(cur_card-card_min_global+1,:) = gam;
-                lambdas(cur_card-card_min_global+1) = lambdas_tmp(l);
+                results.cards(cur_card-card_min_global+1) = cur_card;
+                results.vars(cur_card-card_min_global+1) = cur_var;
+                results.Z(:,cur_card-card_min_global+1) = Z_tmp(:,l);
+                results.gammas(cur_card-card_min_global+1,:) = gam;
+                results.lambdas(cur_card-card_min_global+1) = lambdas_tmp(l);
             end
         end
         gam=splitpoint*gam_left+(1-splitpoint)*gam_right;
@@ -301,13 +248,105 @@ function [cards, vars, Z, gammas, lambdas, found_cards] = binSearch(X, card0, ga
     % if no vector with cardinality card0 could be found, set entry to inf
     if(~isFound)
         % (might have been found as suboptimal solution)
-        if cards(card0-card_min_global+1)==0
-            cards(card0-card_min_global+1)=Inf;
-            vars(card0-card_min_global+1)=Inf;
+        if results.cards(card0-card_min_global+1)==0
+            results.cards(card0-card_min_global+1)=Inf;
+            results.vars(card0-card_min_global+1)=Inf;
         end
         if verbosity>1
             fprintf('Skipping solution with cardinality %d\n',card0);
         end
-        found_cards(card0-card_min_global+1)=inf;
+        results.found_cards(card0-card_min_global+1)=inf;
     end
+end
+
+% fill gaps and make sure the variance is monotonically increasing
+function results=postProcess(results,X,card_min,card_max,num_runs,verbosity)
+
+    dim=size(X,2);
+    isChanging=true;
+    vars_old=results.vars;
+    while(isChanging)
+        % check if variance is monotonically increasing
+        cur_var=results.vars(1);
+        curz=results.Z(:,1);
+        % special treatment of first entry
+        if(results.cards(1)==inf)
+                % greedily add the components with highest variance
+                norm_a_i=zeros(dim,1);
+                for i=1:dim, norm_a_i(i)=norm(X(:,i)); end
+                [norm_sorted,sort_ind]=sort(norm_a_i,'descend');
+                pattern=zeros(dim,1);
+                pattern(sort_ind(1:card_min))=1;
+                [z, new_var2]=optimizeVariance(X,logical(pattern));
+
+                results.vars(1)=new_var2;
+                results.Z(:,1)=z;
+                results.cards(1)=sum(pattern);
+                assert(results.cards(1)==card_min)
+
+                % check if we find something better via invpow
+                gam_left=0;
+                gam_right=1;
+                
+                results = binSearch(results, X, card_min, gam_left, gam_right, ... 
+                    num_runs, z, card_min, card_max, verbosity);
+        end
+        for k=2:length(results.vars)
+            new_var=results.vars(k);
+            if(new_var<cur_var || results.cards(k)==inf)
+                % take sparsity pattern from previous one + add one nonzero
+                % component -> increasse in variance guaranteed
+                norm_a_i=zeros(dim,1);
+                pattern =  abs(curz)>0;
+                ind=find(pattern==0);
+                temp=X*curz;temp=temp/norm(temp);
+                for i=1:length(ind),
+                    norm_a_i(ind(i))=(X(:,ind(i))'*temp)^2;
+                end
+                [rho_max,i_max]=max(norm_a_i);
+                pattern(i_max)=1;
+                [z, new_var2]=optimizeVariance(X,pattern);
+
+                results.vars(k)=new_var2;
+                results.Z(:,k)=z;
+                results.cards(k)=sum(pattern);
+
+                % check if we find something better via invpow
+                card0=card_min-1+k;
+                gam_left=0;
+                gam_right=1;
+                
+                results = binSearch(results, X, card0, gam_left, gam_right, ... 
+                    num_runs, z, card_min, card_max, verbosity);
+            end
+            cur_var=results.vars(k);
+            curz=results.Z(:,k);
+        end
+        
+        for k=1:length(results.vars)
+            assert(results.vars(k)<Inf)
+            assert(results.cards(k)==card_min-1+k)
+        end
+
+        if  norm(results.vars-vars_old,inf)/norm(results.vars(results.vars<inf),inf)< 1E-15
+            isChanging=false;
+        end
+        if verbosity>1
+            fprintf('isChanging=%d  normdiff=%.15g\n',isChanging,norm(results.vars-vars_old,inf));
+        end
+        vars_old=results.vars;
+    end
+
+    if verbosity>1
+        isDecreasing=false;
+        cur_var=results.vars(1);
+        for k=2:length(results.vars)
+            new_var=results.vars(k);
+            if new_var< cur_var 
+                isDecreasing=true;
+            end
+            cur_var=new_var;
+        end
+        fprintf('isChanging=%d isDecreasing=%d \n',isChanging,isDecreasing);
+    end	
 end
