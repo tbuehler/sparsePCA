@@ -18,7 +18,7 @@
 % card_max  if specified, all vectors with cardinality values in intervall 
 %           [card_min,card_max] are computed (default: card_max=card_min)
 % num_runs  number of runs of inverse power method with random 
-%           initialization (default: 10)
+%           initialization (default: 0)
 % verbosity determines frequency of console output (values 0-2, default: 1)
 %
 % cards     the cardinalities (number of nonzero components) of the 
@@ -37,7 +37,7 @@
 function [cards, vars, Z]= sparsePCA(X, card_min, card_max, num_runs, verbosity)
 
     if (nargin<5), verbosity=1; end
-    if (nargin<4), num_runs=10; end
+    if (nargin<4), num_runs=0; end
     if (nargin<3), card_max=card_min; end
 
     assert(card_min>0,'Wrong usage. Cardinality has to positive.');

@@ -20,7 +20,7 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 % num_comp  number of principal components
 % proj_pc   true for deflation with respect to principal components (default:true)
 % num_runs  number of runs of inverse power method with random 
-%           initialization (default: 10)
+%           initialization (default: 0)
 % verbosity determines how much information is displayed (0-2, default: 1)
 %
 % F         the loading vectors
@@ -37,7 +37,7 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 % http://www.ml.uni-saarland.de
 
   if (nargin<6), verbosity=1; end    
-  if (nargin<5), num_runs=10; end
+  if (nargin<5), num_runs=0; end
   if (nargin<4), proj_pc=true; end
 	
   for l=1:length(card_max)
