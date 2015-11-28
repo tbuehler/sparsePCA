@@ -58,7 +58,7 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 
   %main loop
   for l=1:num_comp
-      [cards, vars, F_temp]= sparsePCA(X_cur,card_max(l),card_max(l),num_runs,verbosity);
+      [cards, vars, F_temp]= computeTradeOffCurve(X_cur,card_max(l),card_max(l),num_runs,verbosity);
       assert(size(F_temp,1) == dim)
       assert(size(F,1) == dim)
       assert(size(F,2) == num_comp)

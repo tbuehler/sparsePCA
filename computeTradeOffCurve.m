@@ -8,10 +8,7 @@
 % Available online at http://arxiv.org/abs/1012.0774
 %
 % Usage:
-% [cards, vars, Z] = sparsePCA(X, card_min);
-% [cards, vars, Z] = sparsePCA(X, card_min, card_max);
-% [cards, vars, Z] = sparsePCA(X, card_min, card_max, num_runs);
-% [cards, vars, Z] = sparsePCA(X, card_min, card_max, num_runs, verbosity);
+% [cards, vars, Z] = computeTradeOffCurve(X, card_min, card_max, num_runs, verbosity);
 %
 % X         data matrix (num x dim)
 % card_min  desired number of non-sparse components of output (cardinality)
@@ -34,7 +31,7 @@
 % Copyright 2010-15 Thomas Buehler and Matthias Hein
 % Machine Learning Group, Saarland University, Germany
 % http://www.ml.uni-saarland.de
-function [cards, vars, Z]= sparsePCA(X, card_min, card_max, num_runs, verbosity)
+function [cards, vars, Z]= computeTradeOffCurve(X, card_min, card_max, num_runs, verbosity)
 
     if (nargin<5), verbosity=1; end
     if (nargin<4), num_runs=0; end
@@ -240,8 +237,8 @@ function results = binSearch(results, X, card0, gam_left, gam_right, num_runs, .
         gam=splitpoint*gam_left+(1-splitpoint)*gam_right;
 
         if(verbosity>1)
-            fprintf('gam_left= %.3g gam=%.3g gam_right= %.3g mincard=%d maxcard=%d best_card=%d card0=%d\n', ...
-            gam_left,gam,gam_right,min(cards_tmp), max(cards_tmp), best_card,card0);
+            fprintf('gam_left= %.3g gam=%.3g gam_right= %.3g best_card=%d card0=%d\n', ...
+            gam_left,gam,gam_right,best_card,card0);
         end
     end
 
