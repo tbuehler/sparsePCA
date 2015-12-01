@@ -1,4 +1,4 @@
-function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc, num_runs, verbosity)
+function [F,adj_var,cum_var] = sparsePCA(X, card, num_comp, num_runs, verbosity)
 % Computes multiple sparse PCA components. Each component is computed 
 % using the nonlinear inverse power method described in the below paper,
 % then deflation is performed.
@@ -10,16 +10,15 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 % Available online at http://arxiv.org/abs/1012.0774
 %
 % Usage:
-% F = sparsePCADeflation(X, card_max, num_comp, proj_pc, num_runs, verbosity);
+% F = sparsePCA(X, card, num_comp, num_runs, verbosity);
 %
 % X         data matrix (num x dim)
-% card_max  desired number of non-sparse components of output (cardinality)
-%           for each principal component; card_max is either a vector of
+% card      desired number of non-sparse components of output (cardinality)
+%           for each principal component; card can be either a vector of
 %           length num_comp x 1, or a scalar (all components have same
 %           cardinality)
 % num_comp  number of principal components
-% proj_pc   true for deflation with respect to principal components (default:true)
-% num_runs  number of runs of inverse power method with random 
+% num_runs  number of additional runs of inverse power method with random 
 %           initialization (default: 0)
 % verbosity determines how much information is displayed (0-2, default: 1)
 %
@@ -36,20 +35,20 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 % Machine Learning Group, Saarland University, Germany
 % http://www.ml.uni-saarland.de
 
-  if (nargin<6), verbosity=1; end    
-  if (nargin<5), num_runs=0; end
-  if (nargin<4), proj_pc=true; end
+  proj_pc=true;
+  if (nargin<5), verbosity=1; end    
+  if (nargin<4), num_runs=0; end
 	
-  for l=1:length(card_max)
-    assert(card_max(l)>0,'Wrong usage. Cardinality has to positive.');
-    assert(card_max(l)<=size(X,2),'Wrong usage. Cardinality can not be larger than dim.');
+  for l=1:length(card)
+    assert(card(l)>0,'Wrong usage. Cardinality has to positive.');
+    assert(card(l)<=size(X,2),'Wrong usage. Cardinality can not be larger than dim.');
   end
   assert(num_runs>=0,'Wrong usage. num_runs cannot be negative.');
     
-  if (length(card_max)==1)
-      card_max = card_max * ones(num_comp,1);
+  if (length(card)==1)
+      card = card * ones(num_comp,1);
   else
-      assert(size(card_max,1)==num_comp && size(card_max,2)==1  ,'Wrong usage. card_max has wrong dimension.');
+      assert(size(card,1)==num_comp && size(card,2)==1  ,'Wrong usage. card has wrong dimension.');
   end
   
   X_cur=X;
@@ -58,7 +57,7 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
 
   %main loop
   for l=1:num_comp
-      [cards, vars, F_temp]= computeTradeOffCurve(X_cur,card_max(l),card_max(l),num_runs,verbosity);
+      [all_cards, all_vars, F_temp]= computeTradeOffCurve(X_cur,card(l),card(l),num_runs,verbosity);
       assert(size(F_temp,1) == dim)
       assert(size(F,1) == dim)
       assert(size(F,2) == num_comp)
@@ -67,7 +66,7 @@ function [F,adj_var,cum_var] = sparsePCADeflation(X, card_max, num_comp, proj_pc
       F(:,l)=f;
 
       if verbosity>0
-        fprintf('Finished computing principal component number %d. #nonzeros=%d\n',l,card_max(l));
+        fprintf('Finished computing principal component number %d. #nonzeros=%d\n',l,card(l));
       end
       
       % perform deflation with respect to principal components
