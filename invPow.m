@@ -19,7 +19,7 @@
 % http://www.ml.uni-saarland.de
 function [z,lambda,var]= invPow(X,gamma,maxit,z)
     debug=false;
-    tol=1E-8;
+    tol=1E-5;
     [num,dim]=size(X);
     
     Xz=X * z;
