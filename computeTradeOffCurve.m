@@ -237,8 +237,8 @@ function results = binSearch(results, X, card0, gam_left, gam_right, num_runs, .
         gam=splitpoint*gam_left+(1-splitpoint)*gam_right;
 
         if(verbosity>1)
-            fprintf('gam_left= %.3g gam=%.3g gam_right= %.3g best_card=%d card0=%d\n', ...
-            gam_left,gam,gam_right,best_card,card0);
+            fprintf('gam_left= %.3g gam=%.3g gam_right= %.3g gam_right-gam_left =%.3g best_card=%d card0=%d\n', ...
+            gam_left,gam,gam_right,gam_right-gam_left,best_card,card0);
         end
     end
 
