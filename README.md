@@ -14,12 +14,12 @@ the deflation scheme described in [2] is used.
 
 #### Computing a set of sparse loading vectors:
 
-    F = sparsePCA(X, card, num_comp, num_runs, verbosity);
+    [F, adj_var, cum_var] = sparsePCA(X, card, num_comp, num_runs, verbosity);
 
 #### Input variables
 
     X           data matrix (num x dim)
-    card        desired number of non-sparse components (cardinality) of output    
+    card        desired number of non-sparse components (cardinality) of output
                 for each principal component; card can be either a vector of size 
                 num_comp x 1, or a scalar (in this case all components will have 
                 the same cardinality)
@@ -45,7 +45,8 @@ the deflation scheme described in [2] is used.
     card_min    desired number of non-sparse components of output (cardinality)
     card_max    if specified, all vectors with cardinality values in intervall 
                 [card_min,card_max] are computed (default: card_max=card_min)
-    num_runs    number of runs of IPM with random initialization (default: 0)
+    num_runs    number of additional runs of inverse power method with random 
+                initialization (default: 0)
     verbosity   determines frequency of console output (values 0-2, default: 1)
 
 #### Output variables
