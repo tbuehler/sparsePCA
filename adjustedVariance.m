@@ -8,20 +8,17 @@
 % Copyright 2010-15 Thomas Buehler and Matthias Hein
 % Machine Learning Group, Saarland University, Germany
 % http://www.ml.uni-saarland.de
-function [adj_var, cum_var]= adjustedVariance(Z,X)
+function [adj_var, cum_var]= adjustedVariance(Z, X)
     
+    X = X - mean(X,1);
+    factor = 1 / (size(X,1)-1);
     if (size(Z,2)==1)
-        adj_var = (norm(X * Z))^2;
-        cum_var=adj_var;
+        adj_var = factor * (norm(X * Z))^2;
+        cum_var = adj_var;
     else
-        U = X*Z;
-    
-        [Q,R]=qr(U);
-    
-        adj_var=diag(R).^2;
-        cum_var=cumsum(adj_var);
+        U = X * Z;    
+        [Q, R] = qr(U);
+        adj_var = factor * diag(R).^2;
+        cum_var = cumsum(adj_var);
     end
-    
-end
-    
-    
+end  
