@@ -67,7 +67,7 @@ Extended version available at http://arxiv.org/abs/1012.0774.
 [2] T. Bühler. 
 *A flexible framework for solving constrained ratio problems
 in machine learning*. Ph.D. Thesis, Saarland University, 2015. 
-Available at http://scidok.sulb.uni-saarland.de/volltexte/2015/6159/.	
+http://dx.doi.org/10.22028/D291-26604.
 
 	
 ## License 
